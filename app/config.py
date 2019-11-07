@@ -26,6 +26,8 @@ class Config:
     # refreshed if its access lifespan is not expired.
     JWT_REFRESH_LIFESPAN: Dict[str, int] = {"days": 30}
 
+    RESTPLUS_MASK_SWAGGER: bool = False
+
 
 class TestingConfig(Config):
     """ Testing config. """
