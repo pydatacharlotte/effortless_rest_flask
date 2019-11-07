@@ -5,6 +5,7 @@ from typing import List
 
 from flask import Flask, abort, jsonify, request
 from flask_praetorian import Praetorian, auth_required, roles_required
+from flask_restplus import Api, Resource, Namespace, fields
 from flask_sqlalchemy import SQLAlchemy
 
 from app.schemas.user import UserSchema, UserSchemaWithPassword
@@ -12,6 +13,15 @@ from app.schemas.user import UserSchema, UserSchemaWithPassword
 db = SQLAlchemy()
 guard = Praetorian()
 
+
+authorizations = {"jwt": {"type": "apiKey", "in": "header", "name": "Authorization"}}
+api = Api(
+    title="PyData Flask API",
+    version="0.1.0",
+    prefix="",
+    doc="/docs",
+    authorizations=authorizations,
+)
 
 # Application Factory
 # https://flask.palletsprojects.com/en/1.1.x/patterns/appfactories/
@@ -41,37 +51,64 @@ def create_app(config_name: str) -> Flask:
     # Initialize the flask-praetorian instance for the app
     guard.init_app(app, User)
 
-    @app.route("/")
-    def hello_world() -> str:  # pylint: disable=unused-variable
+    # Initialize Rest+ API
+    api.init_app(app)
+    # Create a namespace and attach to main API
+    user_api = Namespace("User", description="User Resources")
+    api.add_namespace(user_api, path="/users")
 
-        return "Hello World!"
+    #
+    # REST + Examples
+    #
 
-    @app.route("/login", methods=["POST"])
-    def login():
-        # Ignore the mimetype and always try to parse JSON.
-        req = request.get_json(force=True)
+    # Attach routes to namespace
+    @api.route("/login")
+    @api.doc(
+        body=api.model("Login", {"username": fields.String, "password": fields.String})
+    )
+    class UserLoginResource(Resource):
+        def post(self):
+            # Ignore the mimetype and always try to parse JSON.
+            req = request.get_json(force=True)
 
-        username = req.get("username", None)
-        password = req.get("password", None)
+            username = req.get("username", None)
+            password = req.get("password", None)
 
-        user = guard.authenticate(username, password)
-        ret = {"access_token": guard.encode_jwt_token(user)}
-        return (jsonify(ret), 200)
+            user = guard.authenticate(username, password)
+            ret = {"access_token": guard.encode_jwt_token(user)}
 
-    @app.route("/users", methods=["GET"])
-    @auth_required
-    def users():
+            return jsonify(ret)
 
-        users = User.query.all()
+    @user_api.route("")
+    @user_api.doc(security="jwt")
+    class UserResourceNamespace(Resource):
+        @auth_required
+        def get(self):
 
-        return jsonify(UserSchema(many=True).dump(users))
+            users = User.query.all()
 
-    @app.route("/admin/users", methods=["GET"])
-    @roles_required("admin")
-    def users_admin():
+            return jsonify(UserSchema(many=True).dump(users))
 
-        users = User.query.all()
+    @user_api.route("/admin-only")
+    @user_api.doc(security="jwt")
+    class UserAdminOnlyResourceNamespace(Resource):
+        @roles_required("admin")
+        def get(self):
 
-        return jsonify(UserSchemaWithPassword(many=True).dump(users))
+            users = User.query.all()
+
+            return jsonify(UserSchemaWithPassword(many=True).dump(users))
+
+    @user_api.route("/<int:user_id>")
+    @user_api.doc(security="jwt")
+    class UserIdResourceNamespace(Resource):
+        @roles_required("admin")
+        def get(self, user_id: int):
+
+            user = User.query.get(user_id)
+            if not user:
+                abort(404, "User was not found")
+
+            return jsonify(UserSchema().dump(user))
 
     return app
