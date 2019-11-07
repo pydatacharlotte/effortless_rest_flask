@@ -1,8 +1,34 @@
 # Effortless REST w/ FLask
 
-There are 5 chapters with 5 corresponding branches. The `master` branch is a boilerplate starter kit.
+There are 5 chapter folders. CD into each one and follow the below Chapter outline.
 
-**For the below to be relevant chapters, make sure to check out the chapter branches**
+## Pre-requisites
+
+1. pip install requirements
+
+```bash
+pip install -r requirements.txt
+```
+
+2. (Optional) to work with a Heroku DB, create an application and attach PostgreSQL to the application. See chapters 2-5 in `task.py` and set the application name
+
+   - You may use a local sqlLite DB instead of a Heroku deployed DB.
+
+## Getting Started
+
+- `cd` into each chapter and run the invoke commands to start such as:
+
+```bash
+invoke start
+```
+
+```bash
+invoke init-db
+```
+
+```bash
+invoke seed-db
+```
 
 ---
 
@@ -15,30 +41,14 @@ There are 5 chapters with 5 corresponding branches. The `master` branch is a boi
 
 ##### example dependency export
 
-_PIP_
-
 ```bash
 pip freeze > requirements.txt
 ```
 
-_Conda_
-
-```bash
-conda env export > environment.yml
-```
-
 ##### example dependency import/load
-
-_PIP_
 
 ```bash
 pip install -r requirements.txt
-```
-
-_Conda_
-
-```bash
-conda env create -f environment.yml
 ```
 
 app/\_\_init\_\_.py
