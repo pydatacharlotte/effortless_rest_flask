@@ -14,6 +14,10 @@ class Config:
     DEBUG: bool = False
     SECRET_KEY: str = "top secret"
 
+    # Tracks modifications of objects and emit signals
+    # This requires extra memory and should be disabled if not needed.
+    SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
+
 
 class TestingConfig(Config):
     """ Testing config. """
@@ -26,6 +30,10 @@ class TestingConfig(Config):
     #  Exceptions are propagated rather than handled by the the app’s error handlers.
     TESTING: bool = True
 
+    # SQLAlchemy Connection string
+    # use a local sqlite db for testing
+    SQLALCHEMY_DATABASE_URI: str = f"sqlite:///{BASEDIR}/app-test.db"
+
 
 class DevelopmentConfig(Config):
     """ A config to be used for development, use mocks so you don't need a DB. """
@@ -35,12 +43,22 @@ class DevelopmentConfig(Config):
     DEBUG: bool = True
     SECRET_KEY: str = os.getenv("SECRET_KEY", "my_precious_development_secret_key")
 
+    # SQLAlchemy Connection string
+    # use provided ENV variable connection string
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
+    SQLALCHEMY_DATABASE_URI: str = DATABASE_URL
+
 
 class ProductionConfig(Config):
     """ Production config. """
 
     # Inherits defaults from parent.
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dc89aa6c-93e7-474d-a55a-b2113b25fc16")
+
+    # SQLAlchemy Connection string
+    # use provided ENV variable connection string
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
+    SQLALCHEMY_DATABASE_URI: str = DATABASE_URL
 
 
 config_by_name = dict(  # pylint: disable=invalid-name
