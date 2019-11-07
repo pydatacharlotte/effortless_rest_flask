@@ -1,6 +1,7 @@
 """ Provide the capability to configure the app based on target environment. """
 # Flask configs: https://flask.palletsprojects.com/en/1.1.x/config/
 # Flask-SqlALchemy configs: https://flask-sqlalchemy.palletsprojects.com/en/2.x/config/
+# Flask-Praetorian configs: https://flask-praetorian.readthedocs.io/en/latest/notes.html#configuration-settings
 import os
 from typing import Dict
 
@@ -17,6 +18,13 @@ class Config:
     # Tracks modifications of objects and emit signals
     # This requires extra memory and should be disabled if not needed.
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
+
+    # JWT Configs
+    # The default length of time that a JWT may be used to access a protected endpoint
+    JWT_ACCESS_LIFESPAN: Dict[str, int] = {"hours": 24}
+    # The default length of time that a JWT may be refreshed. JWT may also not be
+    # refreshed if its access lifespan is not expired.
+    JWT_REFRESH_LIFESPAN: Dict[str, int] = {"days": 30}
 
 
 class TestingConfig(Config):

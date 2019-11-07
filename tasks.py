@@ -57,7 +57,7 @@ def init_db(ctx, config_name="dev"):
 @task
 def seed_db(ctx, config_name="dev"):
     """Initialize Database"""
-    from app import db, create_app
+    from app import db, create_app, guard
     from app.models.user import User
     from hashlib import sha256
 
@@ -66,11 +66,15 @@ def seed_db(ctx, config_name="dev"):
 
     with app.app_context():
 
-        # !!!!!!!ALERT!!!!!!!
-        # Passwords are stored as plain text. See Chapter 3 for security adjustment!
         def add_users():
-            db.session.add(User(username="admin", password="password", roles="admin"))
-            db.session.add(User(username="user", password="pass"))
+            db.session.add(
+                User(
+                    username="admin",
+                    password=guard.hash_password("password"),
+                    roles="admin",
+                )
+            )
+            db.session.add(User(username="user", password=guard.hash_password("pass")))
 
         add_users()
 

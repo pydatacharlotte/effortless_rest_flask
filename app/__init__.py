@@ -4,10 +4,14 @@ from logging import Logger
 from typing import List
 
 from flask import Flask, abort, jsonify, request
+from flask_praetorian import Praetorian, auth_required, roles_required
 from flask_sqlalchemy import SQLAlchemy
+
 from app.schemas.user import UserSchema, UserSchemaWithPassword
 
 db = SQLAlchemy()
+guard = Praetorian()
+
 
 # Application Factory
 # https://flask.palletsprojects.com/en/1.1.x/patterns/appfactories/
@@ -34,29 +38,40 @@ def create_app(config_name: str) -> Flask:
     # Initialize the database
     db.init_app(app)
 
+    # Initialize the flask-praetorian instance for the app
+    guard.init_app(app, User)
+
     @app.route("/")
     def hello_world() -> str:  # pylint: disable=unused-variable
 
         return "Hello World!"
 
-    # !!!!!!!ALERT!!!!!!!
-    # This does not work. The users are a SQLAlchemy model that must be converted.
-    # Because this route is not using flask-restplus, it will not show up in Swagger
-    @app.route("/uhoh", methods=["GET"])
-    def uh_oh():
-        users: List[User] = User.query.all()
-        print(type(users))
-        print(users)
-        return jsonify(users)
+    @app.route("/login", methods=["POST"])
+    def login():
+        # Ignore the mimetype and always try to parse JSON.
+        req = request.get_json(force=True)
 
-    # This works because Marshmallow is used to dump a Python serialized
-    # object (SQLAlchemy Model)
-    # Because this route is not using flask-restplus, it will not show up in Swagger
-    @app.route("/marsh", methods=["GET"])
-    def marsh():
+        username = req.get("username", None)
+        password = req.get("password", None)
+
+        user = guard.authenticate(username, password)
+        ret = {"access_token": guard.encode_jwt_token(user)}
+        return (jsonify(ret), 200)
+
+    @app.route("/users", methods=["GET"])
+    @auth_required
+    def users():
 
         users = User.query.all()
 
         return jsonify(UserSchema(many=True).dump(users))
+
+    @app.route("/admin/users", methods=["GET"])
+    @roles_required("admin")
+    def users_admin():
+
+        users = User.query.all()
+
+        return jsonify(UserSchemaWithPassword(many=True).dump(users))
 
     return app
